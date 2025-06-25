@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { v4 as uuidv4 } from 'uuid';
 import "./DragandDrop.css"; // Import the updated CSS file
-import { collection, doc, getDoc } from "firebase/firestore";
-import {db} from '../firebase.config'
+import * as XLSX from "xlsx";
 
 const DragandDrop = () => {
   const [tasks, setTasks] = useState([]);
@@ -21,20 +20,6 @@ const DragandDrop = () => {
   const [searchText, setSearchText] = useState("");
   const [searchDate, setSearchDate] = useState("");
   const [editTask, setEditTask] = useState({});
-
-useEffect(async () => {
-
-  const docRef = doc(db, "dnd_task", "users");
-  const docs = doc(db, "dnd_task", "priority_type");
-  const docSnap = await getDoc(docRef);
-  
-  if (docSnap) {
-    console.log("Document data:", docSnap.data(),docs.data());
-  } else {
-    // docSnap.data() will be undefined in this case
-    console.log("No such document!");
-  }
-},[])
 
   useEffect(() => {
     if (userFilter || typeFilter || searchText || searchDate) {
@@ -250,6 +235,27 @@ useEffect(async () => {
     setAddTaskPopup(true);
   };
 
+   const handleExport = () => {
+    const ab = new Date(searchDate);
+      const b = ab.toLocaleString("en-US", {
+        month: "long",
+        year: "numeric",
+      });
+
+      const data = tasks.map((user) => {
+        return {
+          'Task name':user.name,
+          'Type':user.type,
+          'Assignee':user.assignee,
+        };
+      });
+      
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, `${b} Monthly Report`);
+    
+      XLSX.writeFile(wb, `${b}_Report.xlsx`);
+  };
   return (
     <div className="drag-drop-container">
       <h2>Drag and Drop Task Manager</h2>
@@ -273,6 +279,9 @@ useEffect(async () => {
           </button>
           <button className="add-button" onClick={() => setAddTypesPopup(true)}>
             Add Priority / Type
+          </button>
+          <button className="add-button" onClick={() => handleExport()}>
+           Export data
           </button>
         </div>
       </div>
